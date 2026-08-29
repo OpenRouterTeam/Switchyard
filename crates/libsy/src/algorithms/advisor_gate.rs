@@ -28,7 +28,8 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
-use std::time::Instant;
+
+use crate::rt::Instant;
 
 use parking_lot::Mutex;
 use switchyard_protocol::{

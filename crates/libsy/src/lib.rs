@@ -11,6 +11,7 @@ pub use core::processor::{Event, Processor};
 pub use core::state::{State, StateValue};
 
 mod error;
+mod rt;
 pub use error::{DriverError, LibsyError, Result};
 
 mod algorithms;

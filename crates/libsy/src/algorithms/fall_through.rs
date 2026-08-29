@@ -18,13 +18,18 @@
 
 use std::{
     collections::HashMap,
-    sync::{Arc, Once, Weak},
-    time::{Duration, Instant},
+    sync::{Arc, Once},
+    time::Duration,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Weak;
 
 use async_trait::async_trait;
 use parking_lot::Mutex;
 use tokio::sync::Mutex as AsyncMutex;
+
+use crate::rt::Instant;
 
 use crate::core::algorithm::{self, Algorithm, Driver};
 use crate::core::classifier::{Classification, Classifier, Score};
@@ -168,7 +173,12 @@ where
         };
         let states = Arc::downgrade(states);
         self.cleanup_started.call_once(move || {
+            // Timer-driven background cleanup needs a Tokio runtime; wasm hosts
+            // are short-lived isolates, so inactive sessions expire with them.
+            #[cfg(not(target_arch = "wasm32"))]
             drop(tokio::spawn(cleanup_inactive_sessions(states)));
+            #[cfg(target_arch = "wasm32")]
+            drop(states);
         });
     }
 
@@ -285,6 +295,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn cleanup_inactive_sessions<S>(states: Weak<SessionStates<S>>)
 where
     S: Send + 'static,
