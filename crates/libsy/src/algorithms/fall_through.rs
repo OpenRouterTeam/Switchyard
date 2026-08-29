@@ -19,13 +19,18 @@
 
 use std::{
     collections::HashMap,
-    sync::{Arc, Once, Weak},
-    time::{Duration, Instant},
+    sync::{Arc, Once},
+    time::Duration,
 };
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+use std::sync::Weak;
 
 use async_trait::async_trait;
 use parking_lot::Mutex;
 use tokio::sync::Mutex as AsyncMutex;
+
+use crate::rt::Instant;
 
 use crate::algorithms::util::prompts::prepend_system_prompt;
 use crate::core::algorithm::{self, Algorithm, AnswerSummary, Driver};
@@ -125,7 +130,12 @@ impl FallThrough {
         };
         let states = Arc::downgrade(states);
         self.cleanup_started.call_once(move || {
+            // Timer-driven background cleanup needs a Tokio runtime; wasm hosts
+            // are short-lived isolates, so inactive sessions expire with them.
+            #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
             drop(tokio::spawn(cleanup_inactive_sessions(states)));
+            #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+            drop(states);
         });
     }
 
@@ -262,6 +272,7 @@ impl FallThrough {
     }
 }
 
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 async fn cleanup_inactive_sessions(states: Weak<SessionStates>) {
     let start = tokio::time::Instant::now() + SESSION_CLEANUP_INTERVAL;
     let mut interval = tokio::time::interval_at(start, SESSION_CLEANUP_INTERVAL);
