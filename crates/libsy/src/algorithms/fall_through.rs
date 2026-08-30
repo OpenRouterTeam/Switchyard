@@ -51,6 +51,7 @@ type SessionStates<S> = Mutex<HashMap<String, SessionState<S>>>;
 const SESSION_STATE_TTL: Duration = Duration::from_secs(60 * 60);
 
 /// Run the expired session cleanup code this often.
+#[cfg(not(target_arch = "wasm32"))]
 const SESSION_CLEANUP_INTERVAL: Duration = Duration::from_secs(60 * 60);
 
 /// Terminal classifier for a cascade whose classifiers may all abstain.
@@ -174,7 +175,7 @@ where
         let states = Arc::downgrade(states);
         self.cleanup_started.call_once(move || {
             // Timer-driven background cleanup needs a Tokio runtime; wasm hosts
-            // are short-lived isolates, so inactive sessions expire with them.
+            // sweep expired sessions inline in `session_state` instead.
             #[cfg(not(target_arch = "wasm32"))]
             drop(tokio::spawn(cleanup_inactive_sessions(states)));
             #[cfg(target_arch = "wasm32")]
@@ -232,6 +233,10 @@ where
     fn session_state(&self, request: &Request) -> Option<Arc<AsyncMutex<S>>> {
         let states = self.session_states.as_ref()?;
         let session_id = session_id(request)?;
+        // Without a Tokio runtime there is no background cleanup task, so expire
+        // idle sessions inline to keep the registry bounded in long-lived isolates.
+        #[cfg(target_arch = "wasm32")]
+        remove_inactive_sessions(states, Instant::now(), SESSION_STATE_TTL);
         let mut states = states.lock();
         let now = Instant::now();
         let session = states.entry(session_id).or_insert_with(|| SessionState {
