@@ -50,6 +50,7 @@ web-time = "1"
 # Route the transitive RNG through the JS crypto API on wasm targets.
 getrandom = { version = "0.3", default-features = false, features = ["wasm_js"] }
 getrandom-04 = { package = "getrandom", version = "0.4", default-features = false, features = ["wasm_js"] }
+uuid = { workspace = true, features = ["js"] }
 
 [dev-dependencies]
 # SDK + in-memory exporter to assert what the observability layer records.
