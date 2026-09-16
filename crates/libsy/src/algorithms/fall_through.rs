@@ -195,15 +195,15 @@ where
     fn session_state(&self, request: &Request) -> Option<Arc<AsyncMutex<S>>> {
         let states = self.session_states.as_ref()?;
         let session_id = session_id(request)?;
+        let now = Instant::now();
         // Without a Tokio runtime there is no background cleanup task. The registry only
         // grows when a new session is inserted, so sweep expired sessions right before each
         // insert; repeat turns of a known session stay O(1).
         #[cfg(target_arch = "wasm32")]
         if !states.lock().contains_key(&session_id) {
-            remove_inactive_sessions(states, Instant::now(), SESSION_STATE_TTL);
+            remove_inactive_sessions(states, now, SESSION_STATE_TTL);
         }
         let mut states = states.lock();
-        let now = Instant::now();
         let session = states.entry(session_id).or_insert_with(|| SessionState {
             state: Arc::new(AsyncMutex::new(S::default())),
             last_accessed: now,
