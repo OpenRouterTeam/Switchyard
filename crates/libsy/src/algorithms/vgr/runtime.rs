@@ -10,7 +10,9 @@
 
 use std::future::Future;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+
+use crate::rt::{Instant, SystemTime, UNIX_EPOCH};
 
 use async_trait::async_trait;
 use switchyard_protocol::{
@@ -653,7 +655,7 @@ impl VgrClassifier {
         if !self.config.bounded_efficient {
             return Some(operation.await);
         }
-        tokio::time::timeout(self.remaining(started)?, operation)
+        crate::rt::timeout(self.remaining(started)?, operation)
             .await
             .ok()
     }

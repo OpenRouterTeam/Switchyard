@@ -4,9 +4,7 @@
 //! Routing algorithms request external work through [`Driver`] and receive typed replies.
 //! Hosts execute that work, keeping routing policy independent of transport.
 
-use std::{
-    collections::HashMap, future::Future, panic::AssertUnwindSafe, pin::Pin, sync::Arc,
-};
+use std::{collections::HashMap, future::Future, panic::AssertUnwindSafe, pin::Pin, sync::Arc};
 
 use async_trait::async_trait;
 use futures::{FutureExt, Stream, StreamExt};

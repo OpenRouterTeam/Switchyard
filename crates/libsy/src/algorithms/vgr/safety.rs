@@ -3,7 +3,9 @@
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
+use crate::rt::Instant;
 
 use http::StatusCode;
 use parking_lot::Mutex;

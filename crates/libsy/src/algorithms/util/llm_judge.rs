@@ -343,7 +343,7 @@ where
         let verdict = match self.judge.deadline_ms() {
             None => consult.await,
             Some(deadline_ms) => {
-                match tokio::time::timeout(Duration::from_millis(deadline_ms), consult).await {
+                match crate::rt::timeout(Duration::from_millis(deadline_ms), consult).await {
                     Ok(verdict) => verdict,
                     Err(_) => {
                         let error = format!(
